@@ -8,9 +8,13 @@ import (
 	"strings"
 )
 
+type Record []string
+type Transformer func(Record) Record
+type Validator func(Record) bool
+
 func getRawReader() io.Reader {
 	in := `first_namee,last_name,username
-"Rob","Pike2",rob
+"Rob","Pike2",robdd
 Ken,Thompson,keeen
 "Robert","Griesemer","gri"
 `
@@ -21,7 +25,7 @@ func getCsvReader(r io.Reader) *csv.Reader {
 	return csv.NewReader(r)
 }
 
-func mainLoop(r *csv.Reader, action func([]string)) {
+func mainLoop(r *csv.Reader, t Transformer, v Validator) {
 	for {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -31,13 +35,19 @@ func mainLoop(r *csv.Reader, action func([]string)) {
 			log.Fatal(err)
 		}
 
-		action(record)
+		if !v(record) {
+			log.Fatal("failed to validate ", record)
+		}
+
+		fmt.Println(t(record))
 	}
 }
 
 func main() {
-
+	optimisticValidator := func(Record) bool { return true }
+	identity := func(record Record) Record { return record }
 	r := getCsvReader(getRawReader())
-	mainLoop(r, func(record []string) { fmt.Println(record) })
+
+	mainLoop(r, identity, optimisticValidator)
 
 }
