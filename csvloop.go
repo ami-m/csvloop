@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 	"sync"
 )
 
@@ -15,15 +14,6 @@ const workerCount = 5
 type Record []string
 type Transformer func(Record) Record
 type Validator func(Record) bool
-
-func getRawReader() io.Reader {
-	in := `first_namee,last_name,username
-"Rob","Pike2",robdd
-Ken,Thompson,keeen
-"Robert","Griesemer","gri"
-`
-	return strings.NewReader(in)
-}
 
 func getCsvReader(r io.Reader) *csv.Reader {
 	return csv.NewReader(r)
@@ -78,9 +68,10 @@ func mainLoop(r *csv.Reader, w *csv.Writer, t Transformer, v Validator) {
 }
 
 func main() {
+	params := initParams()
 	optimisticValidator := func(Record) bool { return true }
 	identity := func(record Record) Record { return record }
-	r := getCsvReader(getRawReader())
+	r := getCsvReader(getRawReader(params))
 	w := csv.NewWriter(os.Stdout)
 
 	mainLoop(r, w, identity, optimisticValidator)
